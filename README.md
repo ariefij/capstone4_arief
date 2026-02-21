@@ -1,6 +1,6 @@
-# 🎯 Purwa YOLO - Object Detection App
+# 🎯 Construction Equipment YOLO - Object Detection App
 
-Aplikasi Object Detection berbasis YOLOv12 dengan Streamlit untuk deteksi Construction Equipment, Vehicle, dan Fruit.
+Aplikasi Object Detection berbasis YOLOv12 dengan Streamlit untuk deteksi Construction Equipment.
 
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 ![Poetry](https://img.shields.io/badge/poetry-dependency%20management-blue)
@@ -10,18 +10,14 @@ Aplikasi Object Detection berbasis YOLOv12 dengan Streamlit untuk deteksi Constr
 ## 📁 Project Structure
 
 ```
-purwa_yolo/
-├── models/                          # Folder untuk model .pt (gitignored)
+capstone4_arief/
+├── models/                          # Folder untuk model.pt (gitignored)
 │   ├── best_construction.pt
-│   ├── best_vehicle.pt
-│   └── best_fruit.pt
-├── src/purwa_yolo/                  # Source code aplikasi
+├── src/cons_yolo/                  # Source code aplikasi
 │   ├── __init__.py
 │   └── main.py                      # Streamlit app
-├── training_code/                   # Jupyter notebooks untuk training
-│   ├── Train YOLOv12 Construction.ipynb
-│   └── Train YOLOv12 Vehicle.ipynb
-├── tests/
+├── training_code/                  
+│   ├── Train YOLOv12 Construction.ipynb # Jupyter notebooks untuk training
 ├── pyproject.toml                   # Poetry dependencies
 └── README.md
 ```
@@ -34,7 +30,6 @@ purwa_yolo/
 2. Klik **File** → **Upload notebook**
 3. Upload salah satu notebook dari folder `training_code/`:
    - `Train YOLOv12 Construction.ipynb`
-   - `Train YOLOv12 Vehicle.ipynb`
 
 ### Step 2: Setup GPU di Colab
 
@@ -61,7 +56,7 @@ from roboflow import Roboflow
 model = YOLO('yolov8n.pt')  # atau yolov12n.pt
 results = model.train(
     data='path/to/data.yaml',
-    epochs=100,
+    epochs=60,
     imgsz=640,
     batch=16,
     name='my_model'
@@ -78,12 +73,10 @@ model.predict('test_image.jpg', save=True)
 
 Setelah training selesai:
 
-1. Model akan tersimpan di `/content/runs/detect/my_model/weights/best.pt`
+1. Model akan tersimpan di `/content/drive/MyDrive/purwadhika/capstone4_arief/models/best_construction.pt
 2. Download file dengan klik kanan → **Download**
 3. Rename sesuai kebutuhan:
    - `best_construction.pt`
-   - `best_vehicle.pt`
-   - `best_fruit.pt`
 
 ### Step 5: Pindahkan Model ke Project
 
@@ -107,8 +100,8 @@ mv ~/Downloads/best.pt ./models/best_construction.pt
 #### 1. Clone Repository
 
 ```bash
-git clone https://github.com/hermansh-id/purwa_yolo.git
-cd purwa_yolo
+git clone https://github.com/ariefij/capstone4_arief.git
+cd capstone4_arief
 ```
 
 #### 2. Setup Python Version
@@ -142,8 +135,7 @@ Pastikan file model `.pt` ada di folder `models/`:
 ls models/
 # Output:
 # best_construction.pt
-# best_vehicle.pt
-# best_fruit.pt
+
 ```
 
 > **Note**: File model tidak di-commit ke git karena ukurannya besar. 
@@ -155,11 +147,11 @@ ls models/
 
 ```bash
 # Menggunakan Poetry
-poetry run streamlit run src/purwa_yolo/main.py
+poetry run streamlit run src/cons_yolo/main.py
 
 # Atau aktifkan virtual environment dulu
 poetry shell
-streamlit run src/purwa_yolo/main.py
+streamlit run src/cons_yolo/main.py
 ```
 
 ### Akses Aplikasi
@@ -174,8 +166,7 @@ Network URL: http://192.168.x.x:8501
 
 1. **Pilih Model**: Pilih use case dari dropdown:
    - Construction Equipment
-   - Vehicle
-   - Fruit
+  
 
 2. **Upload Image**: Klik "Browse files" dan pilih gambar
    - Format: JPG, JPEG, PNG, WEBP
