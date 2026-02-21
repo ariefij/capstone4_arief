@@ -33,4 +33,4 @@ RUN poetry install --no-interaction --no-ansi
 EXPOSE 8501
 
 # Command to run the application
-CMD ["streamlit", "run", "src/purwa_yolo/main.py", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "src/cons_yolo/main.py", "--server.address=0.0.0.0"]
