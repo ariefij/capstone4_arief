@@ -52,51 +52,70 @@ def detector_pipeline_pillow(image_bytes, model):
 
 # --- Bagian Streamlit Utama ---
 
+
 st.title("🎯 Object Detection")
 
-
-# Load model with caching (only loads once per model type)
 with st.spinner(f"Loading model..."):
     model = load_model()
 
 st.success(f"✅ model loaded!")
 
-# File upload
-uploaded_file = st.file_uploader("Upload Image", accept_multiple_files=False, type=["jpg", "jpeg", "png", "webp"])
+uploaded_file = st.file_uploader(
+    "Upload Image",
+    accept_multiple_files=False,
+    type=["jpg", "jpeg", "png", "webp"]
+)
 
 if uploaded_file is not None:
-    # Display uploaded image
     st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)
-    
-    # Detect button
+
     if st.button("🔍 Detect Objects", type="primary"):
         bytes_data = uploaded_file.getvalue()
-        
-        # Run detection with spinner
+
         with st.spinner("Detecting objects..."):
             annotated_image_rgb, classcounts = detector_pipeline_pillow(bytes_data, model)
-        
-        # Display results
+
         st.subheader("Detection Results")
         st.image(annotated_image_rgb, caption="Detected Objects", use_container_width=True)
-        
-        # Display class counts in a nice format
+
         if classcounts:
             st.subheader("📊 Object Counts")
             col1, col2 = st.columns([1, 2])
             with col1:
                 for class_name, count in classcounts.items():
                     st.metric(label=class_name, value=count)
-            
+
             st.write(classcounts)
-            if (classcounts["person"] > 0):
-                st.warning("person detected in the image.")
-                if classcounts.get("vest") is None:
-                    st.error("person detected without vest.")
-                if classcounts.get("helmet") is None:
-                    st.error("person detected without helmet.")
-                if (classcounts.get("vest") != classcounts.get("person")) and (classcounts.get("helmet") != classcounts.get("person")):
-                    st.error("person detected without vest and helmet.")
-                
+
+            # =========================
+            # Perbaikan logic warning
+            # =========================
+            persons = int(classcounts.get("person", 0))
+            helmets = int(classcounts.get("helmet", 0))
+            vests = int(classcounts.get("vest", 0))
+            no_helmets = int(classcounts.get("no helmet", 0))
+            no_vests = int(classcounts.get("no vest", 0))
+
+            if persons > 0:
+                st.warning(f"👤 Person detected: {persons}")
+
+                # Prioritas pakai kelas 'no helmet' / 'no vest' jika tersedia
+                # Jika tidak ada, fallback pakai selisih person - item
+                missing_helmet = no_helmets if no_helmets > 0 else max(persons - helmets, 0)
+                missing_vest   = no_vests   if no_vests   > 0 else max(persons - vests, 0)
+
+                # Warning terpisah
+                if missing_vest > 0:
+                    st.error(f"🦺 No vest detected: {missing_vest} person")
+
+                if missing_helmet > 0:
+                    st.error(f"⛑️ No helmet detected: {missing_helmet} person")
+
+                # Warning "tidak pakai keduanya"
+                # Kalau model memang bisa mendeteksi kedua pelanggaran pada orang yang sama,
+                # pendekatan praktis adalah ambil minimum (perkiraan jumlah yang kena dua-duanya).
+                both_missing = min(missing_helmet, missing_vest)
+                if both_missing > 0:
+                    st.error(f"⚠️ No helmet AND no vest: {both_missing} person")
         else:
             st.info("No objects detected in the image.")
