@@ -53,69 +53,164 @@ def detector_pipeline_pillow(image_bytes, model):
 # --- Bagian Streamlit Utama ---
 
 
-st.title("🎯 Object Detection")
+import streamlit as st
+import PIL.Image
+import io
+import time
 
-with st.spinner(f"Loading model..."):
-    model = load_model()
-
-st.success(f"✅ model loaded!")
-
-uploaded_file = st.file_uploader(
-    "Upload Image",
-    accept_multiple_files=False,
-    type=["jpg", "jpeg", "png", "webp"]
+# ==========================================
+# 1. KONFIGURASI HALAMAN
+# ==========================================
+st.set_page_config(
+    page_title="PPE Detection Dashboard",
+    page_icon="🎯",
+    layout="wide"
 )
 
-if uploaded_file is not None:
-    st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)
+# ==========================================
+# 2. CUSTOM CSS
+# ==========================================
+st.markdown("""
+    <style>
+    .stApp { background-color: #f8f9fa; }
+    /* Mempercantik Card & Container */
+    [data-testid="stVerticalBlock"] > div:has(div.stMetric) {
+        background-color: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    /* Mempercantik Tombol Utama */
+    div.stButton > button:first-child {
+        background-color: #ff4b4b;
+        color: white;
+        border-radius: 10px;
+        width: 100%;
+        font-weight: bold;
+        border: none;
+        height: 3em;
+    }
+    /* Dropzone Upload */
+    section[data-testid="stFileUploadDropzone"] {
+        border: 2px dashed #ff4b4b;
+        border-radius: 15px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    if st.button("🔍 Detect Objects", type="primary"):
-        bytes_data = uploaded_file.getvalue()
+# ==========================================
+# 3. FUNGSI LOAD MODEL & DETEKSI (Placeholder)
+# ==========================================
+# Pastikan fungsi load_model dan detector_pipeline_pillow sudah terdefinisi di kode Anda
+@st.cache_resource
+def get_model():
+    # Panggil fungsi load_model() asli Anda di sini
+    return load_model() 
 
-        with st.spinner("Detecting objects..."):
-            annotated_image_rgb, classcounts = detector_pipeline_pillow(bytes_data, model)
+# ==========================================
+# 4. SIDEBAR SETTINGS
+# ==========================================
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=80)
+    st.title("Settings")
+    st.subheader("Model Configuration")
+    
+    # Slider ini bisa dihubungkan ke parameter model Anda jika mendukung
+    conf_threshold = st.slider("Confidence Threshold", 0.0, 1.0, 0.45, 0.05)
+    
+    st.divider()
+    with st.status("Model Status..."):
+        model = get_model()
+        st.write("✅ Model Loaded")
+    
+    st.info("Sistem ini mendeteksi Person, Helmet, Vest, dan pelanggaran APD.")
 
-        st.subheader("Detection Results")
-        st.image(annotated_image_rgb, caption="Detected Objects", use_container_width=True)
+# ==========================================
+# 5. HEADER UTAMA
+# ==========================================
+st.title("🎯 Object Detection Dashboard")
+st.write("Sistem Pemantauan Alat Pelindung Diri (APD) Otomatis")
 
-        if classcounts:
-            st.subheader("📊 Object Counts")
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                for class_name, count in classcounts.items():
-                    st.metric(label=class_name, value=count)
+# ==========================================
+# 6. LAYOUT UTAMA (Dua Kolom)
+# ==========================================
+col_input, col_result = st.columns([1, 1], gap="large")
 
-            st.write(classcounts)
+with col_input:
+    st.subheader("📤 Input Section")
+    uploaded_file = st.file_uploader(
+        "Upload Image",
+        type=["jpg", "jpeg", "png", "webp"],
+        help="Seret dan lepas file gambar di sini"
+    )
 
-            # =========================
-            # Perbaikan logic warning
-            # =========================
-            persons = int(classcounts.get("person", 0))
-            helmets = int(classcounts.get("helmet", 0))
-            vests = int(classcounts.get("vest", 0))
-            no_helmets = int(classcounts.get("no helmet", 0))
-            no_vests = int(classcounts.get("no vest", 0))
+    if uploaded_file is not None:
+        st.image(uploaded_file, caption="Original Image", use_container_width=True)
+        
+        if st.button("🔍 Run PPE Detection"):
+            # Progress bar simulasi
+            with st.spinner("Analyzing Safety Equipment..."):
+                bytes_data = uploaded_file.getvalue()
+                
+                # Menjalankan pipeline deteksi asli Anda
+                annotated_image, classcounts = detector_pipeline_pillow(bytes_data, model)
+                
+                # Simpan hasil ke session state agar tidak hilang saat rerun
+                st.session_state['result_img'] = annotated_image
+                st.session_state['counts'] = classcounts
+                st.session_state['detection_run'] = True
+            st.toast("Detection Completed!", icon="✅")
+
+with col_result:
+    st.subheader("🖼️ Detection Result")
+    
+    if st.session_state.get('detection_run'):
+        # 1. Tampilkan Gambar Ter-annotasi
+        st.image(st.session_state['result_img'], caption="Detected Objects", use_container_width=True)
+        
+        # 2. Tampilkan Metric Ringkas
+        counts = st.session_state['counts']
+        if counts:
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Person", counts.get("person", 0))
+            m2.metric("Helmet", counts.get("helmet", 0))
+            m3.metric("Vest", counts.get("vest", 0))
+            
+            # 3. Logika Warning & Pelanggaran (Sesuai kode asli Anda)
+            st.markdown("---")
+            st.subheader("📊 Safety Analysis")
+            
+            persons = int(counts.get("person", 0))
+            helmets = int(counts.get("helmet", 0))
+            vests = int(counts.get("vest", 0))
+            no_helmets = int(counts.get("no helmet", 0))
+            no_vests = int(counts.get("no vest", 0))
 
             if persons > 0:
-                st.warning(f"👤 Person detected: {persons}")
-
-                # Prioritas pakai kelas 'no helmet' / 'no vest' jika tersedia
-                # Jika tidak ada, fallback pakai selisih person - item
+                # Perhitungan selisih
                 missing_helmet = no_helmets if no_helmets > 0 else max(persons - helmets, 0)
-                missing_vest   = no_vests   if no_vests   > 0 else max(persons - vests, 0)
-
-                # Warning terpisah
-                if missing_vest > 0:
-                    st.error(f"🦺 No vest detected: {missing_vest} person")
-
-                if missing_helmet > 0:
-                    st.error(f"⛑️ No helmet detected: {missing_helmet} person")
-
-                # Warning "tidak pakai keduanya"
-                # Kalau model memang bisa mendeteksi kedua pelanggaran pada orang yang sama,
-                # pendekatan praktis adalah ambil minimum (perkiraan jumlah yang kena dua-duanya).
+                missing_vest = no_vests if no_vests > 0 else max(persons - vests, 0)
                 both_missing = min(missing_helmet, missing_vest)
+
+                # Tampilan Alert
+                if missing_vest > 0:
+                    st.error(f"🦺 **No Vest:** {missing_vest} person detected")
+                
+                if missing_helmet > 0:
+                    st.error(f"⛑️ **No Helmet:** {missing_helmet} person detected")
+
                 if both_missing > 0:
-                    st.error(f"⚠️ No helmet AND no vest: {both_missing} person")
+                    st.warning(f"⚠️ **Major Violation:** {both_missing} person ignoring both APD")
+                
+                if missing_helmet == 0 and missing_vest == 0:
+                    st.success("✅ All persons are wearing proper PPE.")
         else:
-            st.info("No objects detected in the image.")
+            st.info("No objects detected.")
+    else:
+        st.info("Hasil deteksi akan muncul di sini setelah proses analisis.")
+
+# ==========================================
+# 7. FOOTER
+# ==========================================
+st.divider()
+st.caption("Developed with ❤️ using Streamlit, Supervision, and YOLOv8")
